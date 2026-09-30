@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import sqlite3
-from pathlib import Path
 
-from backend.config import BASE_DIR
+from backend.config import BASE_DIR, CLEANED_DATASET_PATH, CURRENT_DATASET_PATH, FORECAST_PATH, SEGMENTS_PATH
 
 DB_PATH = BASE_DIR / "customer_behavior.db"
 
@@ -54,3 +53,51 @@ def init_db():
     )
     conn.commit()
     conn.close()
+
+
+def save_current_dataset(df):
+    if df is not None and not df.empty:
+        df.to_csv(CURRENT_DATASET_PATH, index=False)
+
+
+def load_current_dataset():
+    if CURRENT_DATASET_PATH.exists():
+        import pandas as pd
+        return pd.read_csv(CURRENT_DATASET_PATH)
+    return None
+
+
+def save_cleaned_dataset(df):
+    if df is not None and not df.empty:
+        df.to_csv(CLEANED_DATASET_PATH, index=False)
+
+
+def load_cleaned_dataset():
+    if CLEANED_DATASET_PATH.exists():
+        import pandas as pd
+        return pd.read_csv(CLEANED_DATASET_PATH)
+    return None
+
+
+def save_segments(df):
+    if df is not None and not df.empty:
+        df.to_csv(SEGMENTS_PATH, index=False)
+
+
+def load_segments():
+    if SEGMENTS_PATH.exists():
+        import pandas as pd
+        return pd.read_csv(SEGMENTS_PATH)
+    return None
+
+
+def save_forecast(df):
+    if df is not None and not df.empty:
+        df.to_csv(FORECAST_PATH, index=False)
+
+
+def load_forecast():
+    if FORECAST_PATH.exists():
+        import pandas as pd
+        return pd.read_csv(FORECAST_PATH)
+    return None

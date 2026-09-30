@@ -11,5 +11,6 @@ router = APIRouter()
 @router.get("/api/dashboard")
 async def dashboard_data():
     df = load_current_dataset()
-    data = get_dashboard_data(df)
-    return data
+    if df is None:
+        return {"message": "No dataset uploaded yet."}
+    return get_dashboard_data(df)

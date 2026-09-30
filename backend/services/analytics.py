@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import pandas as pd
 import numpy as np
-
+import pandas as pd
 
 COLUMN_ALIASES = {
     "customer_id": ["customerid", "customer_id", "customer", "client_id", "customer number"],
@@ -19,13 +18,13 @@ COLUMN_ALIASES = {
 
 def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    normalized_cols = {col: col for col in df.columns}
+    renamed = {col: col for col in df.columns}
     for canonical, aliases in COLUMN_ALIASES.items():
         for alias in aliases:
             if alias in df.columns:
-                normalized_cols[alias] = canonical
+                renamed[alias] = canonical
                 break
-    return df.rename(columns=normalized_cols)
+    return df.rename(columns=renamed)
 
 
 def build_standard_dataset(df: pd.DataFrame) -> pd.DataFrame:
@@ -37,26 +36,22 @@ def build_standard_dataset(df: pd.DataFrame) -> pd.DataFrame:
     if "customer_id" not in df.columns:
         raise ValueError("Missing required customer identifier column.")
     if "date" not in df.columns:
-        date_cols = [col for col in df.columns if "date" in str(col).lower() or "time" in str(col).lower()]
-        if not date_cols:
+        date_columns = [col for col in df.columns if "date" in str(col).lower() or "time" in str(col).lower()]
+        if not date_columns:
             raise ValueError("Date column is missing. A valid transaction date is required.")
-        df["date"] = df[date_cols[0]]
+        df["date"] = df[date_columns[0]]
 
     if "quantity" not in df.columns:
         raise ValueError("Missing quantity column. Please upload data with quantity information.")
-
     if "unit_price" not in df.columns and "total_amount" not in df.columns:
         raise ValueError("Missing price/sales column. Please upload Unit Price or Total Amount.")
 
     if "transaction_id" not in df.columns:
         df["transaction_id"] = [f"TXN_{idx + 1}" for idx in range(len(df))]
-
     if "product_id" not in df.columns:
         df["product_id"] = [f"PROD_{idx + 1}" for idx in range(len(df))]
-
     if "product_name" not in df.columns:
         df["product_name"] = df["product_id"].astype(str)
-
     if "category" not in df.columns:
         df["category"] = "General"
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from backend.database import load_cleaned_dataset, load_current_dataset, save_segments
+from backend.database import load_cleaned_dataset, load_current_dataset, load_segments, save_segments
 from backend.services.segmentation import run_customer_segmentation
 
 router = APIRouter()
@@ -23,9 +23,6 @@ async def run_segmentation():
 
 @router.get("/api/segments")
 async def get_segments():
-    import pandas as pd
-    from backend.database import load_segments
-
     df = load_segments()
     if df is None or df.empty:
         return {"message": "No segmentation result available."}

@@ -1,17 +1,105 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+import os
+import sqlite3
+from pathlib import Path
 
-from backend.database import load_cleaned_dataset, load_current_dataset, load_forecast
-from backend.services.reports import generate_report_summary
+from backend.config import BASE_DIR, CLEANED_DATASET_PATH, CURRENT_DATASET_PATH, FORECAST_PATH, SEGMENTS_PATH
 
-router = APIRouter()
+DB_PATH = BASE_DIR / "customer_behavior.db"
 
 
-@router.get("/api/report")
-async def generate_report():
-    df = load_cleaned_dataset() if load_cleaned_dataset() is not None else load_current_dataset()
-    forecast_data = None
-    if load_forecast() is not None:
-        forecast_data = {"forecast_table": load_forecast().to_dict(orient="records")}
-    return generate_report_summary(df, forecast_data)
+def get_sqlite_connection():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_db():
+    conn = get_sqlite_connection()
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS datasets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT,
+            row_count INTEGER,
+            column_count INTEGER,
+            uploaded_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            status TEXT
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS customer_segments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_id TEXT,
+            recency INTEGER,
+            frequency INTEGER,
+            monetary REAL,
+            cluster INTEGER,
+            cluster_label TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS forecasts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            forecast_month TEXT,
+            predicted_sales REAL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conn.commit()
+    conn.close()
+
+
+def save_current_dataset(df):
+    if df is not None and not df.empty:
+        df.to_csv(CURRENT_DATASET_PATH, index=False)
+
+
+def load_current_dataset():
+    if CURRENT_DATASET_PATH.exists():
+        import pandas as pd
+        return pd.read_csv(CURRENT_DATASET_PATH)
+    return None
+
+
+def save_cleaned_dataset(df):
+    if df is not None and not df.empty:
+        df.to_csv(CLEANED_DATASET_PATH, index=False)
+
+
+def load_cleaned_dataset():
+    if CLEANED_DATASET_PATH.exists():
+        import pandas as pd
+        return pd.read_csv(CLEANED_DATASET_PATH)
+    return None
+
+
+def save_segments(df):
+    if df is not None and not df.empty:
+        df.to_csv(SEGMENTS_PATH, index=False)
+
+
+def load_segments():
+    if SEGMENTS_PATH.exists():
+        import pandas as pd
+        return pd.read_csv(SEGMENTS_PATH)
+    return None
+
+
+def save_forecast(df):
+    if df is not None and not df.empty:
+        df.to_csv(FORECAST_PATH, index=False)
+
+
+def load_forecast():
+    if FORECAST_PATH.exists():
+        import pandas as pd
+        return pd.read_csv(FORECAST_PATH)
+    return None

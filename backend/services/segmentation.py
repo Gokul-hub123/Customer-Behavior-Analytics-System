@@ -11,7 +11,7 @@ def get_dashboard_data(df: pd.DataFrame) -> dict:
     total_customers = int(df["customer_id"].nunique())
     total_transactions = int(df["transaction_id"].nunique()) if "transaction_id" in df.columns else int(len(df))
     total_sales = float(df["total_amount"].sum())
-    avg_purchase = float(df["total_amount"].mean()) if len(df) else 0
+    avg_purchase = float(df["total_amount"].mean()) if len(df) else 0.0
 
     monthly_sales = (
         df.assign(month=df["date"].dt.to_period("M").astype(str))

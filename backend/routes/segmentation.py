@@ -11,4 +11,6 @@ router = APIRouter()
 @router.get("/api/analysis")
 async def analysis_data():
     df = load_cleaned_dataset() if load_cleaned_dataset() is not None else load_current_dataset()
+    if df is None:
+        return {"message": "No dataset uploaded yet."}
     return get_eda_data(df)

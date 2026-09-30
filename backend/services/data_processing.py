@@ -1,104 +1,55 @@
 from __future__ import annotations
 
-import sqlite3
-from pathlib import Path
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from starlette.responses import FileResponse
 
-from backend.config import BASE_DIR, CURRENT_DATASET_PATH, CLEANED_DATASET_PATH, SEGMENTS_PATH, FORECAST_PATH
+from backend.config import FRONTEND_DIR
+from backend.database import init_db
+from backend.routes.analysis import router as analysis_router
+from backend.routes.cleaning import router as cleaning_router
+from backend.routes.dashboard import router as dashboard_router
+from backend.routes.forecasting import router as forecasting_router
+from backend.routes.reports import router as reports_router
+from backend.routes.segmentation import router as segmentation_router
+from backend.routes.upload import router as upload_router
 
-DB_PATH = BASE_DIR / "customer_behavior.db"
+app = FastAPI(title="Customer Behavior Analytics System", version="1.0.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+app.include_router(upload_router)
+app.include_router(dashboard_router)
+app.include_router(cleaning_router)
+app.include_router(analysis_router)
+app.include_router(segmentation_router)
+app.include_router(forecasting_router)
+app.include_router(reports_router)
 
-def get_sqlite_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-
-def init_db():
-    conn = get_sqlite_connection()
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS datasets (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename TEXT,
-            row_count INTEGER,
-            column_count INTEGER,
-            uploaded_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            status TEXT
-        )
-        """
-    )
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS customer_segments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            customer_id TEXT,
-            recency INTEGER,
-            frequency INTEGER,
-            monetary REAL,
-            cluster INTEGER,
-            cluster_label TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-    )
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS forecasts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            forecast_month TEXT,
-            predicted_sales REAL,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-    )
-    conn.commit()
-    conn.close()
+app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
 
-def save_current_dataset(df):
-    if df is not None and not df.empty:
-        df.to_csv(CURRENT_DATASET_PATH, index=False)
+@app.get("/")
+async def root():
+    index_path = FRONTEND_DIR / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path)
+    return {"message": "Customer Behavior Analytics System is running."}
 
 
-def load_current_dataset():
-    if CURRENT_DATASET_PATH.exists():
-        import pandas as pd
-        return pd.read_csv(CURRENT_DATASET_PATH)
-    return None
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
 
 
-def save_cleaned_dataset(df):
-    if df is not None and not df.empty:
-        df.to_csv(CLEANED_DATASET_PATH, index=False)
+init_db()
 
-
-def load_cleaned_dataset():
-    if CLEANED_DATASET_PATH.exists():
-        import pandas as pd
-        return pd.read_csv(CLEANED_DATASET_PATH)
-    return None
-
-
-def save_segments(df):
-    if df is not None and not df.empty:
-        df.to_csv(SEGMENTS_PATH, index=False)
-
-
-def load_segments():
-    if SEGMENTS_PATH.exists():
-        import pandas as pd
-        return pd.read_csv(SEGMENTS_PATH)
-    return None
-
-
-def save_forecast(df):
-    if df is not None and not df.empty:
-        df.to_csv(FORECAST_PATH, index=False)
-
-
-def load_forecast():
-    if FORECAST_PATH.exists():
-        import pandas as pd
-        return pd.read_csv(FORECAST_PATH)
-    return None
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("backend.main:app", host="127.0.0.1", port=8000, reload=True)

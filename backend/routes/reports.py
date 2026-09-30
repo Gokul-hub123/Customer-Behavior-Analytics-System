@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from backend.database import load_cleaned_dataset, load_current_dataset, save_forecast
+from backend.database import load_cleaned_dataset, load_current_dataset, load_forecast, save_forecast
 from backend.services.forecasting import run_forecast
 
 router = APIRouter()
@@ -23,9 +23,6 @@ async def create_forecast():
 
 @router.get("/api/forecast")
 async def get_forecast():
-    from backend.database import load_forecast
-    import pandas as pd
-
     df = load_forecast()
     if df is None or df.empty:
         return {"message": "No forecast available."}
