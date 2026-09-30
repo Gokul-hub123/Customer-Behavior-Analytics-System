@@ -1,0 +1,28 @@
+CREATE DATABASE IF NOT EXISTS customer_behavior_db;
+USE customer_behavior_db;
+
+CREATE TABLE IF NOT EXISTS transactions (
+    transaction_id VARCHAR(255) PRIMARY KEY,
+    customer_id VARCHAR(255),
+    product_id VARCHAR(255),
+    product_name VARCHAR(255),
+    category VARCHAR(255),
+    transaction_date DATE,
+    quantity INT,
+    unit_price DECIMAL(10,2),
+    total_amount DECIMAL(10,2)
+);
+
+CREATE TABLE IF NOT EXISTS customer_segments (
+    customer_id VARCHAR(255),
+    recency INT,
+    frequency INT,
+    monetary DECIMAL(10,2),
+    cluster INT,
+    cluster_label VARCHAR(255)
+);
+
+CREATE TABLE IF NOT EXISTS forecasts (
+    forecast_month VARCHAR(255),
+    predicted_sales DECIMAL(12,2)
+);

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Behavior Analytics System</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Customer Behavior Analytics System</div>
+    <nav>
+      <button class="nav-btn active" data-target="dashboard-section">Dashboard</button>
+      <button class="nav-btn" data-target="upload-section">Dataset Upload</button>
+      <button class="nav-btn" data-target="cleaning-section">Data Cleaning</button>
+      <button class="nav-btn" data-target="analysis-section">EDA</button>
+      <button class="nav-btn" data-target="segmentation-section">Segmentation</button>
+      <button class="nav-btn" data-target="forecasting-section">Forecasting</button>
+      <button class="nav-btn" data-target="reports-section">Reports</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section id="dashboard-section" class="panel active">
+      <h2>Dashboard</h2>
+      <div id="dashboard-cards" class="card-grid"></div>
+      <div class="chart-grid">
+        <div class="chart-box"><canvas id="monthlySalesChart"></canvas></div>
+        <div class="chart-box"><canvas id="categorySalesChart"></canvas></div>
+        <div class="chart-box"><canvas id="topProductsChart"></canvas></div>
+        <div class="chart-box"><canvas id="customerDistributionChart"></canvas></div>
+      </div>
+      <div id="insights-box" class="insights"></div>
+    </section>
+
+    <section id="upload-section" class="panel">
+      <h2>Dataset Upload</h2>
+      <form id="uploadForm" class="upload-form">
+        <input type="file" id="csvFile" accept=".csv" required>
+        <button type="submit">Upload Dataset</button>
+      </form>
+      <div id="uploadStatus" class="status-box"></div>
+      <div id="datasetPreview" class="table-container"></div>
+    </section>
+
+    <section id="cleaning-section" class="panel">
+      <h2>Data Cleaning</h2>
+      <button id="cleanBtn" class="primary-btn">Clean Data</button>
+      <div id="cleaningSummary" class="summary-box"></div>
+    </section>
+
+    <section id="analysis-section" class="panel">
+      <h2>Exploratory Data Analysis</h2>
+      <button id="analysisBtn" class="primary-btn">View Analysis</button>
+      <div class="card-grid" id="analysisCards"></div>
+      <div class="chart-grid">
+        <div class="chart-box"><canvas id="analysisMonthlyChart"></canvas></div>
+        <div class="chart-box"><canvas id="analysisCategoryChart"></canvas></div>
+      </div>
+    </section>
+
+    <section id="segmentation-section" class="panel">
+      <h2>Customer Segmentation</h2>
+      <button id="segmentationBtn" class="primary-btn">Run Segmentation</button>
+      <div id="segmentationResult" class="summary-box"></div>
+    </section>
+
+    <section id="forecasting-section" class="panel">
+      <h2>Sales Forecasting</h2>
+      <button id="forecastBtn" class="primary-btn">Generate Forecast</button>
+      <div id="forecastResult" class="summary-box"></div>
+      <div class="chart-box large"><canvas id="forecastChart"></canvas></div>
+    </section>
+
+    <section id="reports-section" class="panel">
+      <h2>Reports</h2>
+      <button id="reportBtn" class="primary-btn">Generate Report</button>
+      <div id="reportResult" class="summary-box"></div>
+    </section>
+  </main>
+
+  <script src="/static/js/main.js"></script>
+</body>
+</html>

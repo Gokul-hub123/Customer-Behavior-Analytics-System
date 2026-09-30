@@ -1,0 +1,85 @@
+# Project Context
+
+## Objective
+Build a simple but functional customer behavior analytics project for a final-year student project that allows uploading a retail dataset, cleaning it, analyzing sales, segmenting customers using RFM + K-Means, and forecasting next-month sales.
+
+## Technology Stack
+- HTML
+- CSS
+- JavaScript
+- Python
+- FastAPI
+- Pandas
+- NumPy
+- Scikit-learn
+- MySQL
+- Chart.js
+
+## Folder Structure
+- `backend/` – API logic and data processing
+- `frontend/` – dashboard UI
+- `data/` – sample CSV files
+- `uploads/` – uploaded files
+- `sql/` – database scripts
+
+## Database Schema
+The project uses a simple retail schema based on customer transactions. The main fields are:
+- customer_id
+- transaction_id
+- date
+- product_id
+- product_name
+- category
+- quantity
+- unit_price
+- total_amount
+
+## API Endpoints
+- `GET /`
+- `GET /health`
+- `POST /api/upload`
+- `GET /api/dashboard`
+- `GET /api/cleaning-summary`
+- `POST /api/clean`
+- `GET /api/analysis`
+- `POST /api/segmentation`
+- `GET /api/segments`
+- `POST /api/forecast`
+- `GET /api/forecast`
+- `GET /api/report`
+
+## Dataset Structure
+The app is designed to work with typical retail CSV files containing fields similar to:
+- CustomerID
+- TransactionID
+- Date
+- ProductID
+- ProductName
+- Category
+- Quantity
+- UnitPrice
+
+## Completed Features
+- Dataset upload with validation
+- Data cleaning
+- Dashboard with KPI cards
+- EDA summaries and charts
+- Customer segmentation using RFM + K-Means
+- Sales forecasting using Linear Regression
+- Reports
+
+## Known Limitations
+- Simple local deployment, not cloud-based
+- Forecasting is basic and explainable
+- The app is intentionally lightweight for a college SGP
+
+## Machine Learning Approach
+- StandardScaler for feature scaling
+- K-Means Clustering with 3 clusters
+- RFM analysis using Recency, Frequency, Monetary
+
+## Forecasting Approach
+- Monthly sales aggregation
+- Time index conversion
+- Linear Regression
+- Forecast for next 3 months

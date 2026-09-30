@@ -22,3 +22,8 @@ FRONTEND_DIR = BASE_DIR / "frontend"
 UPLOADS_DIR.mkdir(exist_ok=True)
 DATA_DIR.mkdir(exist_ok=True)
 FRONTEND_DIR.mkdir(exist_ok=True, parents=True)
+
+CURRENT_DATASET_PATH = DATA_DIR / "current_dataset.csv"
+CLEANED_DATASET_PATH = DATA_DIR / "cleaned_dataset.csv"
+SEGMENTS_PATH = DATA_DIR / "segments.csv"
+FORECAST_PATH = DATA_DIR / "forecast.csv"
