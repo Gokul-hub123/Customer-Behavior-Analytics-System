@@ -13,7 +13,9 @@ def run_forecast(df: pd.DataFrame) -> dict:
         return {"message": "Sales forecasting requires valid date and sales data in the uploaded dataset."}
 
     monthly_sales = (
-        df.assign(month=df["date"].dt.to_period("M"))
+        df.assign(date=pd.to_datetime(df["date"], errors="coerce"))
+        .dropna(subset=["date"])
+        .assign(month=lambda x: x["date"].dt.to_period("M"))
         .groupby("month", as_index=False)["total_amount"]
         .sum()
         .rename(columns={"total_amount": "sales"})
@@ -38,8 +40,10 @@ def run_forecast(df: pd.DataFrame) -> dict:
 
     forecast_table = pd.DataFrame(
         {
-            "forecast_month": [str(m) for m in future_months],
+            "forecast_month": [str(month) for month in future_months],
             "predicted_sales": np.round(future_sales, 2),
+            "mae": round(mae, 2),
+            "rmse": round(rmse, 2),
         }
     )
 

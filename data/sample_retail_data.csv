@@ -1,85 +1,303 @@
-# Project Context
+const API_BASE = "http://localhost:8000";
 
-## Objective
-Build a simple but functional customer behavior analytics project for a final-year student project that allows uploading a retail dataset, cleaning it, analyzing sales, segmenting customers using RFM + K-Means, and forecasting next-month sales.
+const charts = {};
 
-## Technology Stack
-- HTML
-- CSS
-- JavaScript
-- Python
-- FastAPI
-- Pandas
-- NumPy
-- Scikit-learn
-- MySQL
-- Chart.js
+function setStatus(element, text, isError = false) {
+  element.innerHTML = `<p style="color:${isError ? '#b91c1c' : '#166534'}; font-weight: 600; margin: 0;">${text}</p>`;
+}
 
-## Folder Structure
-- `backend/` – API logic and data processing
-- `frontend/` – dashboard UI
-- `data/` – sample CSV files
-- `uploads/` – uploaded files
-- `sql/` – database scripts
+function renderCards(data, targetId) {
+  const element = document.getElementById(targetId);
+  const cards = [
+    { label: "Total Customers", value: data.total_customers || 0 },
+    { label: "Total Transactions", value: data.total_transactions || 0 },
+    { label: "Total Sales", value: `₹${(data.total_sales || 0).toFixed(2)}` },
+    { label: "Average Purchase", value: `₹${(data.average_purchase_value || 0).toFixed(2)}` },
+  ];
 
-## Database Schema
-The project uses a simple retail schema based on customer transactions. The main fields are:
-- customer_id
-- transaction_id
-- date
-- product_id
-- product_name
-- category
-- quantity
-- unit_price
-- total_amount
+  element.innerHTML = cards
+    .map(
+      (card) => `
+        <div class="card">
+          <h3>${card.label}</h3>
+          <div class="value">${card.value}</div>
+        </div>
+      `
+    )
+    .join("");
+}
 
-## API Endpoints
-- `GET /`
-- `GET /health`
-- `POST /api/upload`
-- `GET /api/dashboard`
-- `GET /api/cleaning-summary`
-- `POST /api/clean`
-- `GET /api/analysis`
-- `POST /api/segmentation`
-- `GET /api/segments`
-- `POST /api/forecast`
-- `GET /api/forecast`
-- `GET /api/report`
+function renderInsights(data) {
+  const element = document.getElementById("insightsBox");
+  const insights = data.key_insights || [];
+  element.innerHTML = `
+    <h3>Key Insights</h3>
+    <ul class="list">
+      ${insights.map((item) => `<li>${item}</li>`).join("")}
+    </ul>
+  `;
+}
 
-## Dataset Structure
-The app is designed to work with typical retail CSV files containing fields similar to:
-- CustomerID
-- TransactionID
-- Date
-- ProductID
-- ProductName
-- Category
-- Quantity
-- UnitPrice
+function buildLineChartConfig(labels, values, label, color) {
+  return {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label,
+          data: values,
+          borderColor: color,
+          backgroundColor: color + "33",
+          fill: false,
+          tension: 0.3,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+    },
+  };
+}
 
-## Completed Features
-- Dataset upload with validation
-- Data cleaning
-- Dashboard with KPI cards
-- EDA summaries and charts
-- Customer segmentation using RFM + K-Means
-- Sales forecasting using Linear Regression
-- Reports
+function buildBarChartConfig(labels, values, label, color) {
+  return {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label,
+          data: values,
+          backgroundColor: color,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+    },
+  };
+}
 
-## Known Limitations
-- Simple local deployment, not cloud-based
-- Forecasting is basic and explainable
-- The app is intentionally lightweight for a college SGP
+function formatTable(rows, maxRows = 10) {
+  if (!rows || !rows.length) return "<p>No data available.</p>";
+  const columns = Object.keys(rows[0]);
+  return `
+    <table>
+      <thead>
+        <tr>${columns.map((col) => `<th>${col}</th>`).join("")}</tr>
+      </thead>
+      <tbody>
+        ${rows
+          .slice(0, maxRows)
+          .map(
+            (row) => `<tr>${columns.map((col) => `<td>${row[col]}</td>`).join("")}</tr>`
+          )
+          .join("")}
+      </tbody>
+    </table>
+  `;
+}
 
-## Machine Learning Approach
-- StandardScaler for feature scaling
-- K-Means Clustering with 3 clusters
-- RFM analysis using Recency, Frequency, Monetary
+async function loadDashboard() {
+  try {
+    const response = await fetch(`${API_BASE}/api/dashboard`);
+    const data = await response.json();
 
-## Forecasting Approach
-- Monthly sales aggregation
-- Time index conversion
-- Linear Regression
-- Forecast for next 3 months
+    renderCards(data, "dashboardCards");
+    renderInsights(data);
+
+    const monthlyLabels = data.monthly_sales?.map((item) => item.month || item.date) || [];
+    const monthlyValues = data.monthly_sales?.map((item) => Number(item.sales || 0)) || [];
+    const categoryLabels = data.category_sales?.map((item) => item.category || "General") || [];
+    const categoryValues = data.category_sales?.map((item) => Number(item.sales || 0)) || [];
+    const productLabels = data.top_products?.map((item) => item.product_name || "Product") || [];
+    const productValues = data.top_products?.map((item) => Number(item.sales || 0)) || [];
+    const distributionLabels = data.customer_distribution?.map((item) => item.range || "Range") || [];
+    const distributionValues = data.customer_distribution?.map((item) => Number(item.customers || 0)) || [];
+
+    if (charts.monthly) charts.monthly.destroy();
+    if (charts.category) charts.category.destroy();
+    if (charts.product) charts.product.destroy();
+    if (charts.distribution) charts.distribution.destroy();
+
+    charts.monthly = new Chart(document.getElementById("monthlyChart"), buildLineChartConfig(monthlyLabels, monthlyValues, "Monthly Sales", "#2563eb"));
+    charts.category = new Chart(document.getElementById("categoryChart"), buildBarChartConfig(categoryLabels, categoryValues, "Sales by Category", "#10b981"));
+    charts.product = new Chart(document.getElementById("productChart"), buildBarChartConfig(productLabels, productValues, "Top Products", "#f59e0b"));
+    charts.distribution = new Chart(document.getElementById("distributionChart"), buildBarChartConfig(distributionLabels, distributionValues, "Customer Purchase Distribution", "#a78bfa"));
+  } catch (error) {
+    setStatus(document.getElementById("uploadStatus"), "Unable to load dashboard data.", true);
+  }
+}
+
+async function loadCleaningSummary() {
+  try {
+    const response = await fetch(`${API_BASE}/api/cleaning-summary`);
+    const data = await response.json();
+    if (data.message) {
+      document.getElementById("cleaningSummary").innerHTML = `<p>${data.message}</p>`;
+      return;
+    }
+    document.getElementById("cleaningSummary").innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+  } catch (error) {
+    document.getElementById("cleaningSummary").innerHTML = "<p>Unable to fetch cleaning summary.</p>";
+  }
+}
+
+async function loadAnalysis() {
+  try {
+    const response = await fetch(`${API_BASE}/api/analysis`);
+    const data = await response.json();
+    if (data.message) {
+      document.getElementById("analysisCards").innerHTML = `<p>${data.message}</p>`;
+      return;
+    }
+
+    renderCards(
+      {
+        total_customers: data.total_customers || 0,
+        total_transactions: data.total_transactions || 0,
+        total_sales: data.total_sales || 0,
+        average_purchase_value: data.average_sales || 0,
+      },
+      "analysisCards"
+    );
+
+    const monthlyLabels = data.monthly_sales?.map((item) => item.month || item.date) || [];
+    const monthlyValues = data.monthly_sales?.map((item) => Number(item.sales || 0)) || [];
+    const categoryLabels = data.top_categories?.map((item) => item.category || "General") || [];
+    const categoryValues = data.top_categories?.map((item) => Number(item.sales || 0)) || [];
+
+    if (charts.analysisMonthly) charts.analysisMonthly.destroy();
+    if (charts.analysisCategory) charts.analysisCategory.destroy();
+
+    charts.analysisMonthly = new Chart(document.getElementById("analysisMonthlyChart"), buildLineChartConfig(monthlyLabels, monthlyValues, "Monthly Sales", "#2563eb"));
+    charts.analysisCategory = new Chart(document.getElementById("analysisCategoryChart"), buildBarChartConfig(categoryLabels, categoryValues, "Category Sales", "#ef4444"));
+  } catch (error) {
+    document.getElementById("analysisCards").innerHTML = "<p>Analysis could not be loaded.</p>";
+  }
+}
+
+async function runSegmentation() {
+  try {
+    const response = await fetch(`${API_BASE}/api/segmentation`, { method: "POST" });
+    const data = await response.json();
+    document.getElementById("segmentationResult").innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+  } catch (error) {
+    document.getElementById("segmentationResult").innerHTML = "<p>Segmentation failed.</p>";
+  }
+}
+
+async function runForecast() {
+  try {
+    const response = await fetch(`${API_BASE}/api/forecast`, { method: "POST" });
+    const data = await response.json();
+    document.getElementById("forecastResult").innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+
+    const historical = data.historical_sales || [];
+    const forecast = data.forecast_table || [];
+    const labels = [...historical.map((item) => item.date), ...forecast.map((item) => item.forecast_month)];
+    const actualValues = historical.map((item) => Number(item.sales || 0));
+    const forecastValues = [...Array(historical.length).fill(null), ...forecast.map((item) => Number(item.predicted_sales || 0))];
+
+    if (charts.forecastChart) charts.forecastChart.destroy();
+
+    charts.forecastChart = new Chart(document.getElementById("forecastChart"), {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Actual Sales",
+            data: actualValues,
+            borderColor: "#1d4ed8",
+            backgroundColor: "#93c5fd",
+            fill: false,
+          },
+          {
+            label: "Forecast Sales",
+            data: forecastValues,
+            borderColor: "#ef4444",
+            backgroundColor: "#fca5a5",
+            fill: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+      },
+    });
+  } catch (error) {
+    document.getElementById("forecastResult").innerHTML = "<p>Forecast generation failed.</p>";
+  }
+}
+
+async function loadReport() {
+  try {
+    const response = await fetch(`${API_BASE}/api/report`);
+    const data = await response.json();
+    document.getElementById("reportResult").innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+  } catch (error) {
+    document.getElementById("reportResult").innerHTML = "<p>Report generation failed.</p>";
+  }
+}
+
+document.getElementById("uploadForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const fileInput = document.getElementById("csvFile");
+  const file = fileInput.files[0];
+
+  if (!file) {
+    setStatus(document.getElementById("uploadStatus"), "Please choose a CSV file first.", true);
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const response = await fetch(`${API_BASE}/api/upload`, { method: "POST", body: formData });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.detail || "Upload failed.");
+    }
+
+    setStatus(document.getElementById("uploadStatus"), data.message || "Dataset uploaded successfully.");
+    document.getElementById("datasetPreview").innerHTML = formatTable(data.preview || []);
+    await loadDashboard();
+    await loadCleaningSummary();
+  } catch (error) {
+    setStatus(document.getElementById("uploadStatus"), error.message, true);
+  }
+});
+
+document.getElementById("cleanBtn").addEventListener("click", async () => {
+  try {
+    const response = await fetch(`${API_BASE}/api/clean`, { method: "POST" });
+    const data = await response.json();
+    document.getElementById("cleaningSummary").innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+  } catch (error) {
+    document.getElementById("cleaningSummary").innerHTML = "<p>Cleaning failed.</p>";
+  }
+});
+
+document.getElementById("analysisBtn").addEventListener("click", loadAnalysis);
+document.getElementById("segmentationBtn").addEventListener("click", runSegmentation);
+document.getElementById("forecastBtn").addEventListener("click", runForecast);
+document.getElementById("reportBtn").addEventListener("click", loadReport);
+
+document.querySelectorAll(".nav-btn").forEach((button) => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".nav-btn").forEach((btn) => btn.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach((panel) => panel.classList.remove("active"));
+    button.classList.add("active");
+    document.getElementById(button.dataset.target).classList.add("active");
+  });
+});
+
+loadDashboard();
+loadCleaningSummary();
+loadAnalysis();

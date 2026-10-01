@@ -13,7 +13,7 @@ DB_PORT = int(os.getenv("DB_PORT", "3306"))
 DB_USER = os.getenv("DB_USER", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_NAME = os.getenv("DB_NAME", "customer_behavior_db")
-USE_MYSQL = os.getenv("USE_MYSQL", "false").lower() == "true"
+USE_MYSQL = os.getenv("USE_MYSQL", "false").strip().lower() == "true"
 
 UPLOADS_DIR = BASE_DIR / "uploads"
 DATA_DIR = BASE_DIR / "data"

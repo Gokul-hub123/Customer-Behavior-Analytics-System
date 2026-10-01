@@ -1,66 +1,56 @@
 from __future__ import annotations
 
-import pandas as pd
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from starlette.responses import FileResponse
+
+from backend.config import FRONTEND_DIR
+from backend.database import init_db
+from backend.routes.analysis import router as analysis_router
+from backend.routes.cleaning import router as cleaning_router
+from backend.routes.dashboard import router as dashboard_router
+from backend.routes.forecasting import router as forecasting_router
+from backend.routes.reports import router as reports_router
+from backend.routes.segmentation import router as segmentation_router
+from backend.routes.upload import router as upload_router
+
+app = FastAPI(title="Customer Behavior Analytics System", version="1.0.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(upload_router)
+app.include_router(dashboard_router)
+app.include_router(cleaning_router)
+app.include_router(analysis_router)
+app.include_router(segmentation_router)
+app.include_router(forecasting_router)
+app.include_router(reports_router)
+
+app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
 
-def generate_report_summary(df: pd.DataFrame, forecast_data: dict | None = None) -> dict:
-    if df is None or df.empty:
-        return {
-            "dataset_summary": {"records": 0, "customers": 0, "transactions": 0},
-            "sales_summary": {"total_sales": 0, "average_purchase": 0, "top_category": "N/A", "top_product": "N/A"},
-            "customer_summary": {"segments": 0, "customers_per_segment": {}},
-            "forecast_summary": {"next_3_months_forecast": [], "model_used": "Linear Regression"},
-            "key_findings": ["Upload a valid dataset to generate a report."],
-        }
+@app.get("/")
+async def root():
+    index_path = FRONTEND_DIR / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path)
+    return {"message": "Customer Behavior Analytics System is running."}
 
-    dataset = {
-        "records": int(len(df)),
-        "customers": int(df["customer_id"].nunique()),
-        "transactions": int(df["transaction_id"].nunique()) if "transaction_id" in df.columns else int(len(df)),
-    }
 
-    sales = df["total_amount"].sum()
-    category_summary = df.groupby("category")["total_amount"].sum().sort_values(ascending=False)
-    product_summary = df.groupby("product_name")["total_amount"].sum().sort_values(ascending=False)
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
 
-    sales_summary = {
-        "total_sales": round(float(sales), 2),
-        "average_purchase": round(float(df["total_amount"].mean()), 2),
-        "top_category": category_summary.index[0] if not category_summary.empty else "N/A",
-        "top_product": product_summary.index[0] if not product_summary.empty else "N/A",
-    }
 
-    customer_summary = {
-        "segments": 3,
-        "customers_per_segment": {
-            "High-value customers": int((df.get("cluster") == 0).sum()) if "cluster" in df.columns else 0,
-            "Regular customers": int((df.get("cluster") == 1).sum()) if "cluster" in df.columns else 0,
-            "Less-active customers": int((df.get("cluster") == 2).sum()) if "cluster" in df.columns else 0,
-        },
-    }
+init_db()
 
-    forecast_summary = {
-        "next_3_months_forecast": [],
-        "model_used": "Linear Regression",
-    }
-    if forecast_data and isinstance(forecast_data, dict) and "forecast_table" in forecast_data:
-        forecast_summary["next_3_months_forecast"] = forecast_data["forecast_table"]
+if __name__ == "__main__":
+    import uvicorn
 
-    findings = [
-        f"The dataset contains {dataset['records']} records across {dataset['customers']} unique customers.",
-        f"Total sales generated are ₹{sales_summary['total_sales']:.2f}.",
-        f"The highest revenue category is {sales_summary['top_category']}.",
-        f"The best-selling product is {sales_summary['top_product']}.",
-        "Customer segmentation shows different purchasing patterns that can guide marketing strategy.",
-    ]
-
-    if forecast_data and "message" in forecast_data:
-        findings.append(forecast_data["message"])
-
-    return {
-        "dataset_summary": dataset,
-        "sales_summary": sales_summary,
-        "customer_summary": customer_summary,
-        "forecast_summary": forecast_summary,
-        "key_findings": findings[:6],
-    }
+    uvicorn.run("backend.main:app", host="127.0.0.1", port=8000, reload=True)

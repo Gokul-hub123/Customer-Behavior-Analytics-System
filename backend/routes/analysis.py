@@ -2,25 +2,26 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from backend.database import load_cleaned_dataset, load_current_dataset, save_cleaned_dataset
-from backend.services.data_processing import clean_dataset, cleaning_summary
+from backend.database import load_cleaned_dataset, load_current_dataset
+from backend.services.analytics import get_dashboard_data
 
 router = APIRouter()
 
 
-@router.get("/api/cleaning-summary")
-async def get_cleaning_summary():
+@router.get("/api/dashboard")
+async def dashboard():
     df = load_cleaned_dataset() if load_cleaned_dataset() is not None else load_current_dataset()
     if df is None:
-        return {"message": "No dataset uploaded yet."}
-    return cleaning_summary(df)
-
-
-@router.post("/api/clean")
-async def clean_data():
-    df = load_cleaned_dataset() if load_cleaned_dataset() is not None else load_current_dataset()
-    if df is None:
-        return {"message": "No dataset uploaded yet."}
-    cleaned_df, summary = clean_dataset(df)
-    save_cleaned_dataset(cleaned_df)
-    return {"message": "Data cleaned successfully", "summary": summary, "rows": len(cleaned_df)}
+        return {
+            "message": "No dataset uploaded yet.",
+            "total_customers": 0,
+            "total_transactions": 0,
+            "total_sales": 0,
+            "average_purchase_value": 0,
+            "monthly_sales": [],
+            "category_sales": [],
+            "top_products": [],
+            "customer_distribution": [],
+            "key_insights": ["Upload a dataset to generate the dashboard."],
+        }
+    return get_dashboard_data(df)
